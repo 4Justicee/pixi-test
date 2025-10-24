@@ -62,7 +62,16 @@ This assignment showcases several **advanced programming concepts**:
 
 The project demonstrates **production-ready code quality** with comprehensive error handling, extensive documentation, and maintainable architecture suitable for team development.
 
-## 🛠️ Tech Stack
+## 🎮 Play Demo Online
+
+**Live Demo**: [View the application in action](https://pixidemo.luckyverse.club)
+
+Experience all three interactive scenes:
+- **Ace of Shadows** — Watch 144 cards smoothly animate between stacks
+- **Magic Words** — See real-time chat with dynamic image loading
+- **Phoenix Flame** — Control the fire particle system with your mouse/touch
+
+*Note: The demo requires fullscreen mode for optimal experience. Click the overlay to enter fullscreen when prompted.*
 
 - **Runtime**: Node.js + TypeScript
 - **Graphics**: PixiJS v7
