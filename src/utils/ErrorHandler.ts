@@ -3,8 +3,6 @@
  * @fileoverview Centralized error management for the PixiJS application
  */
 
-import type { AppError } from '../types';
-
 /**
  * Custom error types for the application
  */
@@ -37,15 +35,15 @@ export class AppError extends Error {
     this.context = context;
     
     // Maintains proper stack trace for where our error was thrown
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, AppError);
+    if ((Error as any).captureStackTrace) {
+      (Error as any).captureStackTrace(this, AppError);
     }
   }
 
   /**
    * Convert error to plain object for logging
    */
-  toObject(): AppError {
+  toObject(): Record<string, any> {
     return {
       message: this.message,
       code: this.code,
@@ -89,7 +87,7 @@ export class ErrorLogger {
     }
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined' && (window as any).location?.hostname === 'localhost') {
       console.error('[AppError]', appError.toObject());
     }
 
@@ -108,7 +106,7 @@ export class ErrorLogger {
       level: 'warning' as const,
     };
 
-    if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined' && (window as any).location?.hostname === 'localhost') {
       console.warn('[AppWarning]', warning);
     }
   }
@@ -124,7 +122,7 @@ export class ErrorLogger {
       level: 'info' as const,
     };
 
-    if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined' && (window as any).location?.hostname === 'localhost') {
       console.info('[AppInfo]', info);
     }
   }
