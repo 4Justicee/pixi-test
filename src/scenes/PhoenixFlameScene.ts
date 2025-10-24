@@ -102,6 +102,22 @@ export class PhoenixFlameScene {
 
   show() { this.view.visible = true; this.layout(); }
   hide() { this.view.visible = false; }
+
+  restart() {
+    // Clear all existing particles
+    this.particles.forEach(particle => {
+      this.view.removeChild(particle.spr);
+      particle.spr.destroy();
+    });
+    this.particles = [];
+    
+    // Reset emitter position
+    this.emitterX = 0;
+    this.emitterY = 0;
+    
+    // Layout the scene
+    this.layout();
+  }
   layout() {
     this.view.x = this.app.renderer.width * 0.5;
     this.view.y = this.app.renderer.height * 0.6;

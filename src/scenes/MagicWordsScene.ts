@@ -34,6 +34,7 @@ export class MagicWordsScene {
   private chatContainer: PIXI.Container | null = null;
   private scrollContainer: PIXI.Container | null = null;
   private bg!: PIXI.Graphics;
+  private activeTimeouts: number[] = [];
   // Mobile responsive properties
   private get isMobile() {
     return window.innerWidth < 768;
@@ -470,10 +471,11 @@ export class MagicWordsScene {
       const messageDelay = this.isMobile ? 800 : this.isTablet ? 1000 : 1200;
       const delay = index * messageDelay;
       
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         this.animateMessageEntrance(container, container.y as number);
-        
       }, delay);
+      
+      this.activeTimeouts.push(timeoutId);
     });
   }
 
@@ -482,7 +484,7 @@ export class MagicWordsScene {
     this.showTypingIndicator(container);
     
     // After typing animation, show the message
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       this.hideTypingIndicator();
       
       // Animate message entrance
@@ -524,6 +526,8 @@ export class MagicWordsScene {
       
       animate();
     }, this.isMobile ? 400 : this.isTablet ? 500 : 600); // Responsive typing indicator duration
+    
+    this.activeTimeouts.push(timeoutId);
   }
 
   private showTypingIndicator(container: PIXI.Container) {
@@ -593,10 +597,11 @@ export class MagicWordsScene {
   }
 
   private hideTypingIndicator() {
-    const typingIndicator = this.view.getChildByName('typingIndicator');
-    if (typingIndicator) {
-      this.view.removeChild(typingIndicator);
-    }
+    // Remove all typing indicators (in case there are multiple)
+    const typingIndicators = this.view.children.filter(child => child.name === 'typingIndicator');
+    typingIndicators.forEach(indicator => {
+      this.view.removeChild(indicator);
+    });
   }
 
   private getSpeakerColor(name: string): number {
@@ -630,6 +635,29 @@ export class MagicWordsScene {
   
   layout() {
     // Layout is handled in renderChatMessages
+  }
+
+  restart() {
+    // Clear all active timeouts
+    this.activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    this.activeTimeouts = [];
+    
+    // Clear typing indicator if it exists
+    this.hideTypingIndicator();
+    
+    // Clear existing content
+    this.view.removeChildren();
+    
+    // Reset properties
+    this.chatData = null;
+    this.avatarTextures = {};
+    this.emojiTextures = {};
+    this.chatMessages = [];
+    this.chatContainer = null;
+    this.scrollContainer = null;
+    
+    // Rebuild the scene
+    this.build();
   }
 
   private scrollToBottom(animated = true) {

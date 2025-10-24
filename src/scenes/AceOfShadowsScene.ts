@@ -203,6 +203,32 @@ export class AceOfShadowsScene {
     window.removeEventListener('resize', this.handleResize);
   }
 
+  restart() {
+    // Clear all active tweens and intervals
+    this.activeTweens.forEach(({ tween }) => {
+      // Mark tween as finished to stop it
+      if (tween) {
+        (tween as any).finished = true;
+      }
+    });
+    this.activeTweens = [];
+    
+    if (this.topMoveInterval) {
+      clearInterval(this.topMoveInterval);
+      this.topMoveInterval = undefined;
+    }
+    
+    // Clear existing content
+    this.view.removeChildren();
+    
+    // Reset properties
+    this.stacks = [];
+    this.stacksCount = [];
+    
+    // Rebuild the scene
+    this.build();
+  }
+
   layout() {
     const W = this.app.renderer.width;
     const H = this.app.renderer.height;

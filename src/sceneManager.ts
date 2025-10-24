@@ -36,6 +36,12 @@ export class SceneManager {
     if (this._current) this._current.hide();
     const next = this.scenes[key];
     this._current = next;
+    
+    // Restart scenes when selected
+    if ((key === 'magic' || key === 'ace' || key === 'phoenix') && 'restart' in next) {
+      (next as any).restart();
+    }
+    
     next.show();
     this.layout();
   }
