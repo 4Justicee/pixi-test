@@ -1,0 +1,40 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Pixi TS Assignment</title>
+    <style>
+      /* Full-bleed body to support fullscreen rendering */
+      html, body, #app {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #101015;
+      }
+      /* Helper overlay button for fullscreen (user gesture) */
+      #enter-fullscreen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.85);
+        color: #fff;
+        font-family: system-ui, sans-serif;
+        font-size: 20px;
+        z-index: 10;
+        cursor: pointer;
+      }
+      #enter-fullscreen.hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="enter-fullscreen">Click or Tap to Enter Fullscreen</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
