@@ -75,6 +75,7 @@ export class Menu {
 
     c.addChild(bg, txt);
     c.interactive = true;
+    c.cursor = 'pointer';
     c.on('pointertap', onClick);
     c.on('pointerover', () => (bg.alpha = 1));
     c.on('pointerout', () => (bg.alpha = 0.9));
