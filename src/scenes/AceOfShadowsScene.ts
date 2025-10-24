@@ -156,7 +156,7 @@ export class AceOfShadowsScene {
       this.view.addChild(top);
       const tmpPoint = new PIXI.Point();
       // create tween to move card
-      const tween = new Tween(
+      const tween = Tween.create(
         top,
         {
           x: dstInView.x,
