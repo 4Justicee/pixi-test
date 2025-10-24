@@ -441,13 +441,13 @@ export class MagicWordsScene {
       const delay = index * 1200; // 1200ms delay between messages
       
       setTimeout(() => {
-        this.animateMessageEntrance(container);
+        this.animateMessageEntrance(container, container.y as number);
         
       }, delay);
     });
   }
 
-  private animateMessageEntrance(container: PIXI.Container) {
+  private animateMessageEntrance(container: PIXI.Container, containerY: number) {
     // Create typing indicator first
     this.showTypingIndicator(container);
     
@@ -481,6 +481,13 @@ export class MagicWordsScene {
         
         if (progress < 1) {
           requestAnimationFrame(animate);
+        } else {
+          console.log(containerY);
+          // const totalHeight = this.chatContainer!.height;
+          const viewHeight = this.app.renderer.height;
+          if (containerY > viewHeight - 150) {
+            this.scrollToBottom();
+          }
         }
       };
       
@@ -526,9 +533,9 @@ export class MagicWordsScene {
     // Position at the bottom of the current message
     const typingY = container.y + container.height + 10;
     
-    // Adjust for chat container offset
+    const chatOffsetY = this.chatContainer ? this.chatContainer.y : 0; // 🟢 UPDATED
     typingContainer.x = this.chatContainer ? this.chatContainer.x + typingX : typingX;
-    typingContainer.y = typingY;
+    typingContainer.y = typingY + chatOffsetY; // 🟢 UPDATED
     
     
     // Animate dots with better animation
@@ -591,4 +598,35 @@ export class MagicWordsScene {
   layout() {
     // Layout is handled in renderChatMessages
   }
+
+  private scrollToBottom(animated = true) {
+    if (!this.chatContainer) return;
+
+    const totalHeight = this.chatContainer.height;
+    const viewHeight = this.app.renderer.height;
+
+    // 🟢 Calculate offset only when content taller than view
+    const overflow = totalHeight - viewHeight + 150; // margin at bottom
+    if (overflow <= 0) return; // nothing to scroll yet
+
+    const targetY = -overflow; // move container upward
+
+    if (animated) {
+      const startY = this.chatContainer.y;
+      const startTime = Date.now();
+      const duration = 400;
+      const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+      const animate = () => {
+        const progress = Math.min((Date.now() - startTime) / duration, 1);
+        const eased = easeOut(progress);
+        this.chatContainer!.y = startY + (targetY - startY) * eased;
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      animate();
+    } else {
+      this.chatContainer.y = targetY;
+    }
+  }
+
 }
