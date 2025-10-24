@@ -33,7 +33,7 @@ export class MagicWordsScene {
   private chatMessages: PIXI.Container[] = [];
   private chatContainer: PIXI.Container | null = null;
   private scrollContainer: PIXI.Container | null = null;
-  
+  private bg!: PIXI.Graphics;
   // Mobile responsive properties
   private get isMobile() {
     return window.innerWidth < 768;
@@ -59,25 +59,37 @@ export class MagicWordsScene {
   }
 
   private createChatBackground() {
-    const bg = new PIXI.Graphics();
+    this.bg = new PIXI.Graphics();
+    this.view.addChild(this.bg);
+    this.drawChatBackground(); // initial draw
+  
+    // Listen for resize from PixiApp’s ticker or resize event
+    window.addEventListener('resize', () => {
+      this.app.renderer.resize(window.innerWidth, window.innerHeight);
+      this.drawChatBackground();
+    });
+  }
+  
+  private drawChatBackground() {
     const width = this.app.renderer.width;
     const height = this.app.renderer.height;
-    
-    // Chat room background
-    bg.beginFill(0x0f172a, 0.95);
-    bg.drawRoundedRect(0, 0, width, height, 0);
-    bg.endFill();
-    
-    // Add subtle pattern
-    bg.beginFill(0x1e293b, 0.3);
+  
+    // Clear any previous graphics
+    this.bg.clear();
+  
+    // Main rectangle
+    this.bg.beginFill(0x0f172a, 0.95);
+    this.bg.drawRoundedRect(0, 0, width, height, 0);
+    this.bg.endFill();
+  
+    // Subtle pattern overlay
+    this.bg.beginFill(0x1e293b, 0.3);
     for (let i = 0; i < width; i += 40) {
       for (let j = 0; j < height; j += 40) {
-        bg.drawCircle(i, j, 1);
+        this.bg.drawCircle(i, j, 1);
       }
     }
-    bg.endFill();
-    
-    this.view.addChild(bg);
+    this.bg.endFill();
   }
 
   private async fetchChatData() {
@@ -85,8 +97,7 @@ export class MagicWordsScene {
       const resp = await fetch('https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords');
       if (!resp.ok) throw new Error('Bad response');
       this.chatData = await resp.json();
-    } catch (e) {
-      console.error('Failed to fetch chat data:', e);
+    } catch (e) {      
       // Fallback data
       this.chatData = {
         dialogue: [
@@ -115,18 +126,11 @@ export class MagicWordsScene {
 
   private async loadAssets() {
     if (!this.chatData) return;
-
-    console.log('Loading assets...');
-    console.log('Avatars to load:', this.chatData.avatars);
-    console.log('Emojis to load:', this.chatData.emojies);
-
     // Load avatar textures
     for (const avatar of this.chatData.avatars) {
       try {
-        console.log(`Loading avatar for ${avatar.name} from ${avatar.url}`);
         const texture = await ImageLoader.loadTexture(avatar.url);
         this.avatarTextures[avatar.name] = texture;
-        console.log(`Successfully loaded avatar for ${avatar.name}`);
       } catch (e) {
         console.warn(`Failed to load avatar for ${avatar.name}:`, e);
       }
@@ -135,12 +139,9 @@ export class MagicWordsScene {
     // Load emoji textures
     for (const emoji of this.chatData.emojies) {
       try {
-        console.log(`Loading emoji ${emoji.name} from ${emoji.url}`);
         const texture = await ImageLoader.loadTexture(emoji.url);
         this.emojiTextures[emoji.name] = texture;
-        console.log(`Successfully loaded emoji texture for ${emoji.name}:`, texture);
       } catch (e) {
-        console.warn(`Failed to load emoji ${emoji.name}:`, e);
         // Create a fallback texture for missing emojis
         this.createFallbackEmojiTexture(emoji.name);
       }
@@ -149,7 +150,6 @@ export class MagicWordsScene {
     this.emojiTextures["win"] = await ImageLoader.loadTexture("https://api.dicebear.com/9.x/fun-emoji/png?seed=win");
     this.emojiTextures["affirmative"] = await ImageLoader.loadTexture("https://api.dicebear.com/9.x/fun-emoji/png?seed=affirmative");
     this.avatarTextures["Neighbour"] = await ImageLoader.loadTexture("https://api.dicebear.com/9.x/personas/png?body=squared&clothingColor=ffbb58&eyes=glasses&hair=buzzcut&hairColor=6c4545&mouth=smirk&nose=smallRound&skinColor=e5a07e");
-    console.log('Loaded emoji textures:', Object.keys(this.emojiTextures));
   }
 
   private createFallbackEmojiTexture(emojiName: string) {
@@ -250,7 +250,6 @@ export class MagicWordsScene {
     
     if ((avatar && this.avatarTextures[avatar.name]) || message?.name == "Neighbour") {
       const avatarName = avatar?.name || "Neighbour";
-      console.log(`Creating avatar for avatarName`);
       avatarSprite = new PIXI.Sprite(this.avatarTextures[avatarName]);
       avatarSprite.width = avatarSize;
       avatarSprite.height = avatarSize;
@@ -277,7 +276,6 @@ export class MagicWordsScene {
       
       container.addChild(avatarBorder);
       container.addChild(avatarSprite);
-      console.log(`Avatar added for ${avatarName} at position ${avatarSprite.x}, ${avatarSprite.y}`);
     } else {
       console.warn(`Avatar not found for ${message.name}`);
     }
@@ -313,8 +311,7 @@ export class MagicWordsScene {
         bubbleContainer.addChild(text);
         currentX += text.width + 4;
       } else if (part.type === 'emoji' && part.name) {
-        console.log(`Processing emoji: ${part.name}, texture available: ${!!this.emojiTextures[part.name]}`);
-        
+       
         if (this.emojiTextures[part.name]) {
           const emojiSprite = new PIXI.Sprite(this.emojiTextures[part.name]);
           emojiSprite.width = this.isMobile ? 20 : 24;
@@ -330,10 +327,7 @@ export class MagicWordsScene {
           emojiSprite.y = currentY + (lineHeight - emojiSprite.height) / 2;
           bubbleContainer.addChild(emojiSprite);
           currentX += emojiSprite.width + 4;
-          
-          console.log(`Successfully added emoji sprite ${part.name} at position ${emojiSprite.x}, ${emojiSprite.y}`);
         } else {
-          console.warn(`Emoji texture not found for: ${part.name}, creating fallback`);
           // Create a colored circle fallback
           const fallbackEmoji = new PIXI.Graphics();
           const color = this.getEmojiFallbackColor(part.name);
@@ -350,8 +344,6 @@ export class MagicWordsScene {
           fallbackEmoji.y = currentY + lineHeight / 2;
           bubbleContainer.addChild(fallbackEmoji);
           currentX += 24 + 4;
-          
-          console.log(`Added fallback emoji for ${part.name}`);
         }
       }
     }
@@ -407,10 +399,6 @@ export class MagicWordsScene {
     const regex = /\{([^}]+)\}/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
-
-    console.log('Parsing text:', text);
-    console.log('Available emoji textures:', Object.keys(this.emojiTextures));
-
     while ((match = regex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push({
@@ -420,17 +408,14 @@ export class MagicWordsScene {
       }
       
       const emojiName = match[1].trim();
-      console.log(`Found emoji pattern: {${emojiName}}`);
       
       if (this.emojiTextures[emojiName]) {
-        console.log(`Emoji texture found for: ${emojiName}`);
         parts.push({
           type: 'emoji',
           content: '',
           name: emojiName
         });
       } else {
-        console.warn(`Emoji texture not found for: ${emojiName}`);
         // Fallback to text if emoji not found
         parts.push({
           type: 'text',
@@ -447,8 +432,6 @@ export class MagicWordsScene {
         content: text.slice(lastIndex)
       });
     }
-
-    console.log('Parsed parts:', parts);
     return parts;
   }
 
@@ -607,33 +590,5 @@ export class MagicWordsScene {
   
   layout() {
     // Layout is handled in renderChatMessages
-  }
-
-  // Method to replay the chat animation
-  replayChat() {
-    // Clear existing messages
-    this.chatMessages.forEach(message => {
-      if (message.parent) {
-        message.parent.removeChild(message);
-      }
-    });
-    this.chatMessages = [];
-    
-    // Clear containers
-    if (this.scrollContainer && this.scrollContainer.parent) {
-      this.scrollContainer.parent.removeChild(this.scrollContainer);
-    }
-    if (this.chatContainer && this.chatContainer.parent) {
-      this.chatContainer.parent.removeChild(this.chatContainer);
-    }
-    
-    this.scrollContainer = null;
-    this.chatContainer = null;
-    
-    // Hide any existing typing indicators
-    this.hideTypingIndicator();
-    
-    // Re-render messages with animation
-    this.renderChatMessages();
   }
 }

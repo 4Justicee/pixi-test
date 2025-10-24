@@ -139,8 +139,7 @@ export class AceOfShadowsScene {
 
       const top = src.children[src.children.length - 1] as PIXI.Sprite;
       if (!top) return;
-
-      console.log(`move card from ${srcIndex} → ${dstIndex}`);
+     
 
       const dstLocalTopY = this.stacksCount[dstIndex] * this.responsiveOverlap;
       const dstPos = new PIXI.Point(0, dstLocalTopY);
