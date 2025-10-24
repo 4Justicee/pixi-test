@@ -39,9 +39,17 @@ export class MagicWordsScene {
     return window.innerWidth < 768;
   }
 
+  private get isTablet() {
+    return window.innerWidth >= 768 && window.innerWidth < 1024;
+  }
+
+  private get isDesktop() {
+    return window.innerWidth >= 1024;
+  }
+
   constructor(app: PIXI.Application) {
     this.app = app;
-    this.build();
+    this.build();  
   }
 
   private async build() {
@@ -204,10 +212,15 @@ export class MagicWordsScene {
     this.chatContainer.pivot.set(0, 0);
     this.scrollContainer.addChild(this.chatContainer);
 
-    const maxWidth = this.isMobile ? this.app.renderer.width * 0.9 : Math.min(this.app.renderer.width * 0.8, 800);
-    const avatarSize = this.isMobile ? 40 : 50;
-    const messagePadding = this.isMobile ? 12 : 16;
-    let currentY = 20; // Start higher on screen
+    // Responsive sizing
+    const maxWidth = this.isMobile ? this.app.renderer.width * 0.95 : 
+                     this.isTablet ? this.app.renderer.width * 0.85 : 
+                     Math.min(this.app.renderer.width * 0.8, 800);
+    const avatarSize = this.isMobile ? 35 : this.isTablet ? 45 : 50;
+    const messagePadding = this.isMobile ? 10 : this.isTablet ? 14 : 16;
+    const messageSpacing = this.isMobile ? 25 : this.isTablet ? 18 : 20;
+    // Start lower to avoid UI overlap (FPS counter, menu items)
+    let currentY = this.isMobile ? 60 : this.isTablet ? 80 : 100;
 
     // Create message containers first
     const messageContainers: PIXI.Container[] = [];
@@ -219,7 +232,7 @@ export class MagicWordsScene {
       messageContainer.scale.set(0.8);
       this.chatContainer.addChild(messageContainer);
       
-      currentY += messageContainer.height + 20; // More spacing between messages
+      currentY += messageContainer.height + messageSpacing; // Responsive spacing between messages
       messageContainers.push(messageContainer);
     }
 
@@ -284,24 +297,31 @@ export class MagicWordsScene {
     const bubbleContainer = new PIXI.Container();
     const bubbleWidth = maxWidth - avatarSize - 40;
     
-    // Layout text and emojis
+    // Layout text and emojis with responsive sizing
     let currentX = padding;
     let currentY = padding;
-    const lineHeight = this.isMobile ? 20 : 24;
+    const lineHeight = this.isMobile ? 18 : this.isTablet ? 22 : 24;
     const maxLineWidth = bubbleWidth - padding * 2;
+    const fontSize = this.isMobile ? 13 : this.isTablet ? 15 : 16;
     
     for (const part of textParts) {
       if (part.type === 'text') {
         const text = new PIXI.Text(part.content, new PIXI.TextStyle({
           fill: 0xffffff,
-          fontSize: this.isMobile ? 14 : 16,
+          fontSize: fontSize,
           fontFamily: 'system-ui, sans-serif',
           wordWrap: true,
           wordWrapWidth: maxLineWidth,
-          lineHeight: lineHeight
+          lineHeight: lineHeight,
+          breakWords: true, // Better word breaking for mobile
+          align: 'left' // Ensure consistent text alignment
         }));
         
-        if (currentX + text.width > maxLineWidth) {
+        // Handle text positioning and line breaks
+        // Force text measurement to ensure accurate width
+        text.updateText(true);
+        
+        if (currentX + text.width > maxLineWidth && currentX > padding) {
           currentX = padding;
           currentY += lineHeight;
         }
@@ -309,13 +329,19 @@ export class MagicWordsScene {
         text.x = currentX;
         text.y = currentY;
         bubbleContainer.addChild(text);
+        
+        // Move to next position, accounting for text height
+        if (text.height > lineHeight) {
+          currentY += text.height - lineHeight;
+        }
         currentX += text.width + 4;
       } else if (part.type === 'emoji' && part.name) {
        
         if (this.emojiTextures[part.name]) {
           const emojiSprite = new PIXI.Sprite(this.emojiTextures[part.name]);
-          emojiSprite.width = this.isMobile ? 20 : 24;
-          emojiSprite.height = this.isMobile ? 20 : 24;
+          const emojiSize = this.isMobile ? 18 : this.isTablet ? 22 : 24;
+          emojiSprite.width = emojiSize;
+          emojiSprite.height = emojiSize;
           emojiSprite.anchor.set(0, 0);
           
           if (currentX + emojiSprite.width > maxLineWidth) {
@@ -331,8 +357,9 @@ export class MagicWordsScene {
           // Create a colored circle fallback
           const fallbackEmoji = new PIXI.Graphics();
           const color = this.getEmojiFallbackColor(part.name);
+          const fallbackSize = this.isMobile ? 9 : this.isTablet ? 11 : 12;
           fallbackEmoji.beginFill(color);
-          fallbackEmoji.drawCircle(0, 0, this.isMobile ? 10 : 12);
+          fallbackEmoji.drawCircle(0, 0, fallbackSize);
           fallbackEmoji.endFill();
           
           if (currentX + 24 > maxLineWidth) {
@@ -348,8 +375,8 @@ export class MagicWordsScene {
       }
     }
 
-    // Create bubble background
-    const bubbleHeight = currentY + lineHeight + padding;
+    // Create bubble background with proper height calculation
+    const bubbleHeight = Math.max(currentY + lineHeight + padding, lineHeight + padding * 2);
     const bubbleBg = new PIXI.Graphics();
     
     // Different colors for different speakers
@@ -373,10 +400,10 @@ export class MagicWordsScene {
     bubbleContainer.addChildAt(bubbleBg, 0);
     container.addChild(bubbleContainer);
 
-    // Add speaker name
+    // Add speaker name with responsive sizing
     const nameText = new PIXI.Text(message.name, new PIXI.TextStyle({
       fill: this.getSpeakerNameColor(message.name),
-      fontSize: this.isMobile ? 12 : 14,
+      fontSize: this.isMobile ? 11 : this.isTablet ? 13 : 14,
       fontFamily: 'system-ui, sans-serif',
       fontWeight: 'bold'
     }));
@@ -390,7 +417,9 @@ export class MagicWordsScene {
     
     container.addChild(nameText);
 
-    container.height = bubbleHeight + 40;
+    // Responsive container height calculation
+    const nameHeight = this.isMobile ? 25 : this.isTablet ? 30 : 35;
+    container.height = bubbleHeight + nameHeight;
     return container;
   }
 
@@ -437,8 +466,9 @@ export class MagicWordsScene {
 
   private animateMessagesSequentially(messageContainers: PIXI.Container[]) {
     messageContainers.forEach((container, index) => {
-      // Delay each message appearance
-      const delay = index * 1200; // 1200ms delay between messages
+      // Responsive delay between messages
+      const messageDelay = this.isMobile ? 800 : this.isTablet ? 1000 : 1200;
+      const delay = index * messageDelay;
       
       setTimeout(() => {
         this.animateMessageEntrance(container, container.y as number);
@@ -482,17 +512,18 @@ export class MagicWordsScene {
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
-          console.log(containerY);
-          // const totalHeight = this.chatContainer!.height;
+          // Responsive scroll detection with UI offset
           const viewHeight = this.app.renderer.height;
-          if (containerY > viewHeight - 150) {
+          const uiOffset = this.isMobile ? 40 : this.isTablet ? 80 : 100;
+          const scrollThreshold = viewHeight - uiOffset - (this.isMobile ? 40 : this.isTablet ? 120 : 140);
+          if (containerY > scrollThreshold) {
             this.scrollToBottom();
           }
         }
       };
       
       animate();
-    }, 600); // Show typing indicator for 600ms
+    }, this.isMobile ? 400 : this.isTablet ? 500 : 600); // Responsive typing indicator duration
   }
 
   private showTypingIndicator(container: PIXI.Container) {
@@ -512,8 +543,10 @@ export class MagicWordsScene {
     }
     
     // Calculate position where the new message will appear
-    const maxWidth = this.isMobile ? this.app.renderer.width * 0.9 : Math.min(this.app.renderer.width * 0.8, 800);
-    const avatarSize = this.isMobile ? 40 : 50;
+    const maxWidth = this.isMobile ? this.app.renderer.width * 0.95 : 
+                     this.isTablet ? this.app.renderer.width * 0.85 : 
+                     Math.min(this.app.renderer.width * 0.8, 800);
+    const avatarSize = this.isMobile ? 35 : this.isTablet ? 45 : 50;
     
     // Position typing indicator at the bottom of the current message area
     // This will be where the new message will appear
@@ -605,16 +638,19 @@ export class MagicWordsScene {
     const totalHeight = this.chatContainer.height;
     const viewHeight = this.app.renderer.height;
 
-    // 🟢 Calculate offset only when content taller than view
-    const overflow = totalHeight - viewHeight + 150; // margin at bottom
+    // Responsive bottom margin with UI offset
+    const uiOffset = this.isMobile ? 40 : this.isTablet ? 80 : 100;
+    const bottomMargin = this.isMobile ? 40 : this.isTablet ? 100 : 120;
+    
+    // Calculate offset only when content taller than view
+    const overflow = totalHeight - (viewHeight - uiOffset) + bottomMargin;
     if (overflow <= 0) return; // nothing to scroll yet
-
     const targetY = -overflow; // move container upward
 
     if (animated) {
       const startY = this.chatContainer.y;
       const startTime = Date.now();
-      const duration = 400;
+      const duration = this.isMobile ? 300 : 400; // Faster animation on mobile
       const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
       const animate = () => {
